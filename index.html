@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Excellence Académique — Maths & PCT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05070f;--bg2:#080c1a;--surface:#0d1225;--surface2:#111830;
+  --blue:#4f8fff;--cyan:#00d4ff;--gold:#f0c060;--orange:#ff7a30;
+  --green:#00e5a0;--white:#eef2ff;--muted:#8892b0;
+  --border:rgba(79,143,255,0.15);--border2:rgba(240,192,96,0.2);
+  --radius:10px;--ease:cubic-bezier(0.22,1,0.36,1);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--white);overflow-x:hidden;cursor:none}
+
+/* ══════════════════════════════════════
+   INTRO CINÉMATIQUE
+══════════════════════════════════════ */
+#intro{
+  position:fixed;inset:0;z-index:10000;
+  background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2rem;
+  transition:opacity .8s var(--ease),transform .8s var(--ease);
+}
+#intro.hide{opacity:0;transform:scale(1.05);pointer-events:none}
+.intro-logo{
+  font-family:'Playfair Display',serif;font-size:3.5rem;font-weight:900;
+  background:linear-gradient(135deg,var(--blue),var(--cyan),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  opacity:0;animation:introFade .8s var(--ease) .3s forwards;
+  letter-spacing:-.02em;
+}
+.intro-sub{
+  font-size:.85rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+  opacity:0;animation:introFade .8s var(--ease) .7s forwards;
+}
+.intro-bar-wrap{
+  width:260px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;
+  overflow:hidden;opacity:0;animation:introFade .5s var(--ease) 1s forwards;
+}
+.intro-bar{
+  height:100%;width:0;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  border-radius:2px;animation:introLoad 1.4s var(--ease) 1.1s forwards;
+}
+.intro-formulas{
+  display:flex;gap:2rem;flex-wrap:wrap;justify-content:center;max-width:500px;
+  opacity:0;animation:introFade .8s var(--ease) .5s forwards;
+}
+.intro-f{
+  font-size:.9rem;color:rgba(79,143,255,.4);
+  font-family:'Playfair Display',serif;font-style:italic;
+  animation:introFloat 3s ease-in-out infinite;
+}
+.intro-f:nth-child(2){animation-delay:.4s}
+.intro-f:nth-child(3){animation-delay:.8s}
+.intro-f:nth-child(4){animation-delay:1.2s}
+@keyframes introFade{to{opacity:1}}
+@keyframes introLoad{to{width:100%}}
+@keyframes introFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* ══════════════════════════════════════
+   CURSOR
+══════════════════════════════════════ */
+#cur{position:fixed;width:10px;height:10px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:width .15s,height .15s,background .15s}
+#cur-ring{position:fixed;width:38px;height:38px;border:1.5px solid rgba(0,212,255,.35);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%)}
+#cur-trail{position:fixed;width:6px;height:6px;background:rgba(0,212,255,.2);border-radius:50%;pointer-events:none;z-index:9997;transform:translate(-50%,-50%)}
+body:has(a:hover) #cur,body:has(button:hover) #cur{width:18px;height:18px;background:var(--gold)}
+body:has(a:hover) #cur-ring,body:has(button:hover) #cur-ring{width:54px;height:54px;border-color:rgba(240,192,96,.5)}
+
+/* ══════════════════════════════════════
+   CANVAS
+══════════════════════════════════════ */
+#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ══════════════════════════════════════
+   FLOATING FORMULAS
+══════════════════════════════════════ */
+.ffwrap{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.ff{position:absolute;color:rgba(79,143,255,.1);font-size:clamp(.65rem,1vw,.95rem);font-family:'Playfair Display',serif;white-space:nowrap;user-select:none;animation:ffup linear infinite}
+@keyframes ffup{0%{transform:translateY(110vh) rotate(0deg);opacity:0}5%{opacity:1}95%{opacity:.07}100%{transform:translateY(-15vh) rotate(12deg);opacity:0}}
+
+/* ══════════════════════════════════════
+   NAV
+══════════════════════════════════════ */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:1.2rem 6vw;transition:background .4s,box-shadow .4s}
+nav.scrolled{background:rgba(5,7,15,.88);backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border)}
+.logo{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:.5rem}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:grid;place-items:center;font-size:.82rem;font-weight:700;color:var(--bg)}
+.logo span{color:var(--cyan)}
+.nav-links{display:flex;align-items:center;gap:2.5rem;list-style:none}
+.nav-links a{font-size:.78rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--cyan);transition:width .3s var(--ease)}
+.nav-links a:hover{color:var(--white)}
+.nav-links a:hover::after{width:100%}
+.btn-nav{padding:.5rem 1.4rem;background:linear-gradient(135deg,var(--blue),var(--cyan));color:var(--bg)!important;font-weight:600!important;border-radius:100px;box-shadow:0 0 20px rgba(79,143,255,.3);transition:transform .2s,box-shadow .2s!important}
+.btn-nav::after{display:none!important}
+.btn-nav:hover{transform:translateY(-2px)!important;box-shadow:0 6px 30px rgba(79,143,255,.55)!important}
+.hamburger{display:none;cursor:pointer;flex-direction:column;gap:5px}
+.hamburger span{display:block;width:22px;height:1.5px;background:var(--white);transition:.3s}
+
+/* ══════════════════════════════════════
+   HERO
+══════════════════════════════════════ */
+#hero{min-height:100vh;display:flex;align-items:center;padding:8rem 6vw 5rem;position:relative;overflow:hidden;z-index:10}
+.hero-glow{position:absolute;top:-5%;left:35%;width:650px;height:650px;border-radius:50%;background:radial-gradient(circle,rgba(79,143,255,.13) 0%,transparent 70%);pointer-events:none;animation:glowPulse 6s ease-in-out infinite}
+.hero-glow2{position:absolute;bottom:-10%;right:5%;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.07) 0%,transparent 70%);pointer-events:none;animation:glowPulse 8s ease-in-out 2s infinite}
+@keyframes glowPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:.7}}
+.hero-inner{max-width:780px;position:relative;z-index:2}
+.hero-pill{display:inline-flex;align-items:center;gap:.6rem;padding:.4rem 1.1rem;border-radius:100px;background:rgba(79,143,255,.1);border:1px solid rgba(79,143,255,.3);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:2rem;opacity:0;animation:slideUp .7s var(--ease) 2.8s forwards}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+h1.ht{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,5.5vw,5.2rem);font-weight:900;line-height:1.06;letter-spacing:-.02em;color:var(--white);margin-bottom:1.5rem;opacity:0;animation:slideUp .9s var(--ease) 3s forwards}
+h1.ht .acc{background:linear-gradient(90deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+h1.ht .gold{background:linear-gradient(90deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-desc{font-size:1rem;color:var(--muted);max-width:520px;line-height:1.75;margin-bottom:2.5rem;font-weight:300;opacity:0;animation:slideUp .8s var(--ease) 3.2s forwards}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;opacity:0;animation:slideUp .8s var(--ease) 3.4s forwards}
+.btn-p{padding:.9rem 2.2rem;background:linear-gradient(135deg,var(--blue),var(--cyan));color:var(--bg);font-size:.82rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;text-decoration:none;border-radius:100px;box-shadow:0 0 30px rgba(79,143,255,.4);transition:transform .25s var(--ease),box-shadow .25s;position:relative;overflow:hidden}
+.btn-p::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--cyan),var(--blue));opacity:0;transition:opacity .3s}
+.btn-p:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 10px 40px rgba(79,143,255,.6)}
+.btn-p:hover::before{opacity:1}
+.btn-g{padding:.9rem 2.2rem;border:1px solid rgba(79,143,255,.35);color:var(--white);font-size:.82rem;font-weight:400;letter-spacing:.07em;text-transform:uppercase;text-decoration:none;border-radius:100px;backdrop-filter:blur(10px);transition:border-color .25s,background .25s,transform .25s}
+.btn-g:hover{border-color:var(--cyan);background:rgba(79,143,255,.1);transform:translateY(-4px)}
+.hero-stats{display:flex;gap:3rem;margin-top:5rem;flex-wrap:wrap;opacity:0;animation:slideUp .8s var(--ease) 3.6s forwards}
+.stat{text-align:left}
+.stat-n{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:700;line-height:1}
+.stat-n .sa{background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-l{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}
+.stat-div{width:1px;background:var(--border);align-self:stretch}
+
+/* ══════════════════════════════════════
+   TICKER
+══════════════════════════════════════ */
+.ticker{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:.85rem 0;background:rgba(79,143,255,.04);position:relative;z-index:10}
+.ticker-track{display:flex;gap:4rem;align-items:center;animation:tick 28s linear infinite;width:max-content;white-space:nowrap}
+.ticker-track:hover{animation-play-state:paused}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:.5rem}
+.tick-label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);opacity:.7}
+.tick-sep{color:var(--border);font-size:1rem}
+
+/* ══════════════════════════════════════
+   SECTIONS
+══════════════════════════════════════ */
+.sp{padding:7rem 6vw;position:relative;z-index:10}
+.eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);margin-bottom:1rem}
+.eyebrow::before{content:'';width:20px;height:1px;background:var(--cyan)}
+h2.st{font-family:'Playfair Display',serif;font-size:clamp(2rem,3.8vw,3rem);font-weight:700;line-height:1.15;color:var(--white);margin-bottom:1rem}
+h2.st em{font-style:italic;color:var(--cyan)}
+.sdesc{color:var(--muted);max-width:460px;font-size:.92rem;font-weight:300;line-height:1.7}
+
+/* ══════════════════════════════════════
+   PROGRESS BARS (stats section)
+══════════════════════════════════════ */
+#stats{background:var(--bg2)}
+.stats-layout{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;margin-top:4rem}
+.stats-chart{position:relative}
+.donut-wrap{display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:2rem}
+.donut-wrap svg{transform:rotate(-90deg)}
+.donut-center{position:absolute;text-align:center}
+.donut-num{font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:700}
+.donut-num .sa{background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.donut-lbl{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.bars-list{display:flex;flex-direction:column;gap:1.5rem}
+.bar-item{}
+.bar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem}
+.bar-name{font-size:.85rem;font-weight:500;color:var(--white)}
+.bar-pct{font-size:.8rem;color:var(--cyan);font-weight:600}
+.bar-track{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;width:0;transition:width 1.4s var(--ease)}
+.bar-fill.blue{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.bar-fill.gold{background:linear-gradient(90deg,var(--gold),var(--orange))}
+.bar-fill.green{background:linear-gradient(90deg,var(--green),var(--cyan))}
+.bar-fill.purple{background:linear-gradient(90deg,#a78bfa,var(--blue))}
+
+/* Mini chart bars */
+.mini-chart{display:flex;align-items:flex-end;gap:.4rem;height:80px;margin-top:2rem}
+.mini-bar{flex:1;border-radius:4px 4px 0 0;min-height:10%;transition:height 1.2s var(--ease),opacity .3s;opacity:.7;cursor:pointer}
+.mini-bar:hover{opacity:1;transform:scaleY(1.05);transform-origin:bottom}
+.mini-bar.b{background:linear-gradient(180deg,var(--blue),rgba(79,143,255,.3))}
+.mini-bar.c{background:linear-gradient(180deg,var(--cyan),rgba(0,212,255,.3))}
+.mini-bar.g{background:linear-gradient(180deg,var(--gold),rgba(240,192,96,.3))}
+.mini-chart-labels{display:flex;gap:.4rem;margin-top:.4rem}
+.mini-chart-labels span{flex:1;text-align:center;font-size:.6rem;color:var(--muted);letter-spacing:.05em}
+
+/* ══════════════════════════════════════
+   SERVICES — HOVER SPECTACULAIRE
+══════════════════════════════════════ */
+#services{background:var(--bg)}
+.services-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:4rem}
+.sc{
+  position:relative;overflow:hidden;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:3rem;
+  transition:transform .5s var(--ease),box-shadow .5s,border-color .5s;
+  cursor:pointer;transform-style:preserve-3d;
+}
+/* Animated gradient border on hover */
+.sc::before{
+  content:'';position:absolute;inset:-1px;border-radius:21px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan),var(--blue));
+  background-size:300% 300%;
+  opacity:0;z-index:-1;
+  transition:opacity .4s;
+  animation:gradShift 3s linear infinite paused;
+}
+.sc:hover::before{opacity:1;animation-play-state:running}
+@keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+/* Glow ripple on hover */
+.sc::after{
+  content:'';position:absolute;
+  top:var(--my,50%);left:var(--mx,50%);
+  width:400px;height:400px;
+  background:radial-gradient(circle,rgba(79,143,255,.12) 0%,transparent 70%);
+  transform:translate(-50%,-50%);
+  opacity:0;transition:opacity .4s;pointer-events:none;border-radius:50%;
+}
+.sc:hover::after{opacity:1}
+
+.sc.gold-c::before{background:linear-gradient(135deg,var(--gold),var(--orange),var(--gold));background-size:300% 300%}
+.sc.gold-c::after{background:radial-gradient(circle,rgba(240,192,96,.1) 0%,transparent 70%)}
+.sc:hover{transform:translateY(-10px) scale(1.01);box-shadow:0 30px 80px rgba(0,0,0,.5);border-color:transparent}
+.sc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem}
+.sc-icon{width:58px;height:58px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;background:rgba(79,143,255,.12);border:1px solid rgba(79,143,255,.25);transition:transform .3s,box-shadow .3s}
+.sc:hover .sc-icon{transform:scale(1.15) rotate(-5deg);box-shadow:0 0 30px rgba(79,143,255,.4)}
+.sc.gold-c .sc-icon{background:rgba(240,192,96,.1);border-color:rgba(240,192,96,.25)}
+.sc.gold-c:hover .sc-icon{box-shadow:0 0 30px rgba(240,192,96,.4)}
+.sc-badge{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .8rem;border-radius:100px;background:rgba(79,143,255,.1);color:var(--blue);border:1px solid rgba(79,143,255,.2)}
+.sc.gold-c .sc-badge{background:rgba(240,192,96,.1);color:var(--gold);border-color:rgba(240,192,96,.2)}
+.sc-title{font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:700;color:var(--white);margin-bottom:.8rem}
+.sc-desc{color:var(--muted);font-size:.88rem;line-height:1.7;font-weight:300;margin-bottom:1.8rem}
+.formula-box{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.4rem;margin:.8rem 0;transition:border-color .3s,background .3s,transform .3s}
+.sc:hover .formula-box{border-color:rgba(79,143,255,.4);background:rgba(79,143,255,.04);transform:translateX(4px)}
+.sc.gold-c:hover .formula-box{border-color:rgba(240,192,96,.35);background:rgba(240,192,96,.04)}
+.formula-box .fl{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.sc-topics{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:1.5rem}
+.sc-topic{font-size:.7rem;padding:.28rem .75rem;border-radius:100px;background:rgba(79,143,255,.07);border:1px solid rgba(79,143,255,.14);color:var(--blue);transition:background .2s,transform .2s}
+.sc-topic:hover{background:rgba(79,143,255,.2);transform:translateY(-2px)}
+.sc.gold-c .sc-topic{background:rgba(240,192,96,.07);border-color:rgba(240,192,96,.14);color:var(--gold)}
+.sc.gold-c .sc-topic:hover{background:rgba(240,192,96,.2)}
+.sc-link{display:inline-flex;align-items:center;gap:.5rem;margin-top:1.8rem;font-size:.78rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);text-decoration:none;transition:gap .25s,opacity .2s}
+.sc-link:hover{gap:1rem}
+.sc.gold-c .sc-link{color:var(--gold)}
+
+/* Formula showcase grid */
+.fshow{grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;position:relative;overflow:hidden}
+.fshow::before{content:'FORMULES';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Playfair Display',serif;font-size:7rem;font-weight:900;color:rgba(79,143,255,.025);white-space:nowrap;pointer-events:none}
+.fi{text-align:center;padding:1.3rem;border-radius:var(--radius);background:rgba(0,0,0,.2);border:1px solid rgba(79,143,255,.07);transition:transform .35s var(--ease),border-color .3s,background .3s,box-shadow .3s;cursor:pointer}
+.fi:hover{transform:translateY(-6px) scale(1.04);border-color:rgba(79,143,255,.4);background:rgba(79,143,255,.06);box-shadow:0 10px 40px rgba(79,143,255,.15)}
+.fi-lbl{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+.fi-name{font-size:.72rem;color:var(--cyan);margin-top:.6rem;font-weight:500}
+
+/* ══════════════════════════════════════
+   LAB
+══════════════════════════════════════ */
+#lab{background:var(--bg2)}
+.lab-layout{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
+.lab-screen{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 0 60px rgba(79,143,255,.08);transition:box-shadow .4s}
+.lab-screen:hover{box-shadow:0 0 80px rgba(79,143,255,.18)}
+.lab-bar{background:rgba(0,0,0,.3);padding:.75rem 1.2rem;display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--border)}
+.ld{width:10px;height:10px;border-radius:50%}
+.lab-body{padding:1.8rem}
+.lab-tabs{display:flex;gap:.4rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.ltab{padding:.38rem .9rem;border-radius:100px;font-size:.72rem;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:.2s;font-family:'Outfit',sans-serif}
+.ltab.active,.ltab:hover{background:rgba(79,143,255,.15);border-color:var(--blue);color:var(--white)}
+.lab-fname{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);text-align:center;margin-bottom:.5rem}
+.lab-area{background:rgba(0,0,0,.25);border-radius:var(--radius);padding:1.4rem;text-align:center;min-height:80px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(79,143,255,.1);margin-bottom:.8rem;transition:border-color .4s,background .4s}
+.lab-area:hover{border-color:rgba(79,143,255,.35);background:rgba(79,143,255,.04)}
+.lab-fdesc{font-size:.8rem;color:var(--muted);line-height:1.6;text-align:center}
+.lab-nav{display:flex;gap:.5rem;margin-top:1rem;justify-content:center}
+.lab-nav button{background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;transition:.2s;font-family:'Outfit',sans-serif}
+.lab-nav button:hover{border-color:var(--blue);color:var(--white);background:rgba(79,143,255,.1)}
+.checklist{display:flex;flex-direction:column;gap:.9rem;margin-top:2.5rem}
+.ci2{display:flex;gap:1rem;align-items:flex-start}
+.ci2-icon{width:28px;height:28px;flex-shrink:0;border-radius:50%;background:rgba(79,143,255,.1);border:1px solid rgba(79,143,255,.25);display:grid;place-items:center;font-size:.7rem;color:var(--cyan);margin-top:2px;transition:transform .3s,box-shadow .3s}
+.ci2:hover .ci2-icon{transform:scale(1.2);box-shadow:0 0 15px rgba(79,143,255,.4)}
+.ci2-title{font-size:.88rem;font-weight:500;color:var(--white);margin-bottom:.2rem}
+.ci2-desc{font-size:.8rem;color:var(--muted);font-weight:300}
+
+/* ══════════════════════════════════════
+   TESTIMONIALS — HOVER SPECTACULAIRE
+══════════════════════════════════════ */
+#testi{background:var(--bg)}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:4rem}
+.tc{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:2.5rem;position:relative;overflow:hidden;
+  transition:transform .5s var(--ease),box-shadow .5s,border-color .4s;
+  cursor:default;
+}
+.tc::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(79,143,255,.06) 0%,transparent 50%);
+  opacity:0;transition:opacity .4s;
+}
+.tc:hover{transform:translateY(-8px);box-shadow:0 25px 70px rgba(0,0,0,.45);border-color:rgba(79,143,255,.35)}
+.tc:hover::before{opacity:1}
+.tc::after{content:'"';position:absolute;bottom:-1.5rem;right:1.5rem;font-family:'Playfair Display',serif;font-size:9rem;font-weight:900;color:rgba(79,143,255,.04);line-height:1;pointer-events:none;transition:color .4s}
+.tc:hover::after{color:rgba(79,143,255,.08)}
+.res-badge{display:inline-flex;align-items:center;gap:.4rem;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:100px;padding:.28rem .75rem;font-size:.68rem;color:var(--green);margin-bottom:1rem;transition:background .3s}
+.tc:hover .res-badge{background:rgba(0,229,160,.15)}
+.t-stars{color:var(--gold);font-size:.8rem;letter-spacing:.12em;margin-bottom:1.1rem}
+.t-text{font-family:'Playfair Display',serif;font-style:italic;font-size:.98rem;color:var(--white);line-height:1.6;margin-bottom:1.6rem}
+.t-author{display:flex;align-items:center;gap:.9rem}
+.t-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));display:grid;place-items:center;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--bg);flex-shrink:0;transition:transform .3s,box-shadow .3s}
+.tc:hover .t-av{transform:scale(1.1);box-shadow:0 0 20px rgba(79,143,255,.4)}
+.t-name{font-size:.83rem;font-weight:500;color:var(--white)}
+.t-role{font-size:.72rem;color:var(--muted)}
+
+/* ══════════════════════════════════════
+   CONTACT
+══════════════════════════════════════ */
+#contact{background:var(--bg2);overflow:hidden}
+.contact-glow{position:absolute;top:0;right:0;width:600px;height:600px;background:radial-gradient(circle,rgba(79,143,255,.06) 0%,transparent 70%);pointer-events:none}
+.cg{display:grid;grid-template-columns:1fr 1.2fr;gap:6rem;align-items:start;position:relative;z-index:2}
+.ci-items{display:flex;flex-direction:column;gap:1.4rem;margin-top:3rem}
+.ci{display:flex;gap:1.1rem;align-items:flex-start;transition:transform .3s}
+.ci:hover{transform:translateX(5px)}
+.ci-icon{width:42px;height:42px;flex-shrink:0;border-radius:12px;background:rgba(79,143,255,.1);border:1px solid rgba(79,143,255,.2);display:grid;place-items:center;font-size:.95rem;transition:background .3s,box-shadow .3s}
+.ci:hover .ci-icon{background:rgba(79,143,255,.2);box-shadow:0 0 20px rgba(79,143,255,.25)}
+.ci-label{font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);margin-bottom:.2rem}
+.ci-val{font-size:.86rem;color:var(--muted)}
+.cform{display:flex;flex-direction:column;gap:1.1rem}
+.fg{display:flex;flex-direction:column;gap:.45rem}
+.fg label{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3)}
+.fg input,.fg select,.fg textarea{
+  background:var(--surface);border:1px solid var(--border);color:var(--white);
+  padding:.82rem 1.1rem;border-radius:var(--radius);font-family:'Outfit',sans-serif;
+  font-size:.86rem;outline:none;resize:none;
+  transition:border-color .25s,background .25s,box-shadow .25s,transform .2s;
+  -webkit-appearance:none;
+}
+.fg input::placeholder,.fg textarea::placeholder{color:rgba(255,255,255,.18)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  border-color:var(--blue);background:var(--surface2);
+  box-shadow:0 0 20px rgba(79,143,255,.12);transform:translateY(-1px);
+}
+.fg select option{background:var(--surface)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.btn-sub{
+  padding:.95rem 2rem;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:var(--bg);font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;
+  letter-spacing:.07em;text-transform:uppercase;border:none;border-radius:100px;
+  cursor:pointer;transition:transform .25s,box-shadow .25s;
+  box-shadow:0 0 30px rgba(79,143,255,.3);margin-top:.5rem;position:relative;overflow:hidden;
+}
+.btn-sub::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--cyan),var(--blue));opacity:0;transition:opacity .3s}
+.btn-sub:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 40px rgba(79,143,255,.5)}
+.btn-sub:hover::before{opacity:1}
+.btn-sub span{position:relative;z-index:1}
+.fsuccess{display:none;text-align:center;padding:3rem;font-family:'Playfair Display',serif;font-size:1.3rem;font-style:italic;color:var(--cyan)}
+
+/* ══════════════════════════════════════
+   FOOTER
+══════════════════════════════════════ */
+footer{background:#03040a;padding:2.5rem 6vw;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;border-top:1px solid var(--border);position:relative;z-index:10}
+.flogo{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--white);text-decoration:none}
+.flogo span{color:var(--cyan)}
+footer p{font-size:.73rem;color:rgba(255,255,255,.22)}
+.flinks{display:flex;gap:2rem}
+.flinks a{font-size:.73rem;color:rgba(255,255,255,.3);text-decoration:none;transition:color .2s}
+.flinks a:hover{color:var(--cyan)}
+
+/* ══════════════════════════════════════
+   SCROLL ANIMATIONS
+══════════════════════════════════════ */
+.rv{opacity:0;transform:translateY(44px);transition:opacity .85s var(--ease),transform .85s var(--ease)}
+.rl{opacity:0;transform:translateX(-44px);transition:opacity .85s var(--ease),transform .85s var(--ease)}
+.rr{opacity:0;transform:translateX(44px);transition:opacity .85s var(--ease),transform .85s var(--ease)}
+.rs{opacity:0;transform:scale(.93);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.in{opacity:1!important;transform:none!important}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}
+.d4{transition-delay:.4s}.d5{transition-delay:.5s}.d6{transition-delay:.6s}
+@keyframes slideUp{to{opacity:1;transform:none}}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media(max-width:1024px){
+  .services-grid{grid-template-columns:1fr}
+  .fshow{grid-template-columns:1fr 1fr}
+  .stats-layout{grid-template-columns:1fr;gap:3rem}
+  .lab-layout{grid-template-columns:1fr;gap:3rem}
+  .tgrid{grid-template-columns:1fr 1fr}
+  .cg{grid-template-columns:1fr;gap:3rem}
+}
+@media(max-width:768px){
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:rgba(5,7,15,.97);padding:2rem 6vw;gap:1.4rem;backdrop-filter:blur(20px)}
+  .nav-links.open{display:flex}
+  .hamburger{display:flex}
+  .tgrid{grid-template-columns:1fr}
+  .fshow{grid-template-columns:1fr}
+  .fg-row{grid-template-columns:1fr}
+  #cur,#cur-ring,#cur-trail{display:none}
+  body{cursor:auto}
+}
+@media(max-width:480px){
+  h1.ht{font-size:2.5rem}
+  .hero-btns{flex-direction:column;align-items:flex-start}
+  .hero-stats{gap:2rem}
+}
+mjx-container{color:var(--white)!important}
+.katex{color:var(--white)!important;font-size:1.05rem!important}
+.katex .mord,.katex .mbin,.katex .mrel,.katex .mopen,.katex .mclose,.katex .mpunct,.katex .minner{color:var(--white)!important}
+</style>
+</head>
+<body>
+
+<!-- INTRO CINÉMATIQUE -->
+<div id="intro">
+  <div class="intro-formulas">
+    <span class="intro-f">E = mc²</span>
+    <span class="intro-f">∫f(x)dx</span>
+    <span class="intro-f">F = ma</span>
+    <span class="intro-f">a²+b²=c²</span>
+  </div>
+  <div class="intro-logo">Excellence Académique</div>
+  <div class="intro-sub">Mathématiques &amp; Physique-Chimie-Technologie</div>
+  <div class="intro-bar-wrap"><div class="intro-bar"></div></div>
+</div>
+
+<!-- CURSOR -->
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div id="cur-trail"></div>
+
+<!-- CANVAS -->
+<canvas id="bgc"></canvas>
+
+<!-- FLOATING FORMULAS -->
+<div class="ffwrap" id="ffwrap"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="logo"><div class="logo-icon">∑</div>Excel<span>lence</span></a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#stats">Résultats</a></li>
+    <li><a href="#services">Nos cours</a></li>
+    <li><a href="#lab">Approche</a></li>
+    <li><a href="#testi">Avis</a></li>
+    <li><a href="#contact" class="btn-nav">S'inscrire</a></li>
+  </ul>
+  <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-glow"></div><div class="hero-glow2"></div>
+  <div class="hero-inner">
+    <div class="hero-pill"><div class="pill-dot"></div>Cours de Renforcement · 6ème — Terminale</div>
+    <h1 class="ht">Maîtrisez les<br><span class="acc">Mathématiques</span><br>&amp; la <span class="gold">PCT</span> avec<br>confiance</h1>
+    <p class="hero-desc">Un encadrement d'excellence pour transformer équations, lois et théorèmes en véritables atouts. De <span style="color:var(--cyan)">E = mc²</span> au calcul intégral, nous rendons chaque concept limpide.</p>
+    <div class="hero-btns">
+      <a href="#contact" class="btn-p">Commencer maintenant</a>
+      <a href="#services" class="btn-g">Explorer les cours</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-n"><span class="sa" id="c1">0</span>%</div><div class="stat-l">Taux de réussite</div></div>
+      <div class="stat-div"></div>
+      <div class="stat"><div class="stat-n">+<span class="sa" id="c2">0</span></div><div class="stat-l">Points gagnés en moyenne</div></div>
+      <div class="stat-div"></div>
+      <div class="stat"><div class="stat-n"><span class="sa" id="c3">0</span>+</div><div class="stat-l">Élèves accompagnés</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
+
+<!-- STATS & GRAPHIQUES -->
+<section id="stats" class="sp">
+  <div class="rv" style="max-width:600px">
+    <div class="eyebrow">Nos résultats</div>
+    <h2 class="st">Des progrès <em>mesurables</em><br>et documentés</h2>
+    <p class="sdesc">Chaque trimestre, nous mesurons la progression de nos élèves par matière, par niveau et par type d'exercice.</p>
+  </div>
+  <div class="stats-layout">
+    <div class="rl d1">
+      <!-- Donut chart -->
+      <div class="donut-wrap">
+        <svg width="200" height="200" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="16"/>
+          <circle id="donut1" cx="100" cy="100" r="80" fill="none" stroke="url(#dg1)" stroke-width="16" stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="502" style="transition:stroke-dashoffset 1.6s var(--ease)"/>
+          <defs>
+            <linearGradient id="dg1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#4f8fff"/>
+              <stop offset="100%" stop-color="#00d4ff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="donut-center">
+          <div class="donut-num"><span class="sa" id="dc1">0</span>%</div>
+          <div class="donut-lbl">Satisfaction</div>
+        </div>
+      </div>
+      <!-- Mini bar chart -->
+      <div class="mini-chart" id="miniChart">
+        <div class="mini-bar b" data-h="60" style="height:0%"></div>
+        <div class="mini-bar c" data-h="75" style="height:0%"></div>
+        <div class="mini-bar b" data-h="85" style="height:0%"></div>
+        <div class="mini-bar g" data-h="70" style="height:0%"></div>
+        <div class="mini-bar c" data-h="90" style="height:0%"></div>
+        <div class="mini-bar b" data-h="80" style="height:0%"></div>
+        <div class="mini-bar g" data-h="95" style="height:0%"></div>
+      </div>
+      <div class="mini-chart-labels">
+        <span>6e</span><span>5e</span><span>4e</span><span>3e</span><span>2e</span><span>1e</span><span>Tle</span>
+      </div>
+    </div>
+    <div class="rr d2">
+      <div class="bars-list" id="barsList">
+        <div class="bar-item rv d1">
+          <div class="bar-header"><span class="bar-name">Mathématiques</span><span class="bar-pct">94%</span></div>
+          <div class="bar-track"><div class="bar-fill blue" data-w="94"></div></div>
+        </div>
+        <div class="bar-item rv d2">
+          <div class="bar-header"><span class="bar-name">Physique-Chimie</span><span class="bar-pct">91%</span></div>
+          <div class="bar-track"><div class="bar-fill gold" data-w="91"></div></div>
+        </div>
+        <div class="bar-item rv d3">
+          <div class="bar-header"><span class="bar-name">Taux de réussite au Brevet</span><span class="bar-pct">97%</span></div>
+          <div class="bar-track"><div class="bar-fill green" data-w="97"></div></div>
+        </div>
+        <div class="bar-item rv d4">
+          <div class="bar-header"><span class="bar-name">Taux de réussite au Bac</span><span class="bar-pct">89%</span></div>
+          <div class="bar-track"><div class="bar-fill purple" data-w="89"></div></div>
+        </div>
+        <div class="bar-item rv d5">
+          <div class="bar-header"><span class="bar-name">Élèves avec mention</span><span class="bar-pct">76%</span></div>
+          <div class="bar-track"><div class="bar-fill blue" data-w="76"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services" class="sp">
+  <div class="rv" style="max-width:600px">
+    <div class="eyebrow">Nos programmes</div>
+    <h2 class="st">Deux disciplines,<br>une <em>excellence</em></h2>
+    <p class="sdesc">Des programmes ciblés, structurés autour des exigences des examens nationaux.</p>
+  </div>
+  <div class="services-grid">
+    <!-- MATHS -->
+    <div class="sc rv d1">
+      <div class="sc-head">
+        <div class="sc-icon">∑</div>
+        <div class="sc-badge">Collège · Lycée</div>
+      </div>
+      <div class="sc-title">Mathématiques</div>
+      <div class="sc-desc">Algèbre, géométrie, analyse, probabilités, trigonométrie, suites. Une pédagogie progressive qui construit une intuition mathématique solide et durable.</div>
+      <div class="formula-box"><div class="fl">Dérivée</div><div id="f1"></div></div>
+      <div class="formula-box"><div class="fl">Équation du 2nd degré</div><div id="f2"></div></div>
+      <div class="formula-box"><div class="fl">Trigonométrie</div><div id="f3"></div></div>
+      <div class="sc-topics">
+        <span class="sc-topic">Algèbre</span><span class="sc-topic">Géométrie</span>
+        <span class="sc-topic">Analyse</span><span class="sc-topic">Probabilités</span>
+        <span class="sc-topic">Logarithmes</span><span class="sc-topic">Brevet · Bac</span>
+      </div>
+      <a href="#contact" class="sc-link">S'inscrire en Maths →</a>
+    </div>
+    <!-- PCT -->
+    <div class="sc gold-c rv d2">
+      <div class="sc-head">
+        <div class="sc-icon">⚗️</div>
+        <div class="sc-badge">Collège · Lycée</div>
+      </div>
+      <div class="sc-title">Physique-Chimie-Techno</div>
+      <div class="sc-desc">Mécanique, électricité, optique, thermodynamique, chimie organique & minérale. Comprendre les lois qui gouvernent l'univers.</div>
+      <div class="formula-box" style="border-color:rgba(240,192,96,.15)"><div class="fl">2ème loi de Newton</div><div id="f4"></div></div>
+      <div class="formula-box" style="border-color:rgba(240,192,96,.15)"><div class="fl">Énergie de masse (Einstein)</div><div id="f5"></div></div>
+      <div class="formula-box" style="border-color:rgba(240,192,96,.15)"><div class="fl">Loi d'Ohm · Puissance</div><div id="f6"></div></div>
+      <div class="sc-topics">
+        <span class="sc-topic">Mécanique</span><span class="sc-topic">Électricité</span>
+        <span class="sc-topic">Optique</span><span class="sc-topic">Thermodynamique</span>
+        <span class="sc-topic">Chimie org.</span><span class="sc-topic">Brevet · Bac</span>
+      </div>
+      <a href="#contact" class="sc-link">S'inscrire en PCT →</a>
+    </div>
+    <!-- FORMULA SHOWCASE -->
+    <div class="fshow rv d3">
+      <div class="fi"><div class="fi-lbl">Pythagore</div><div id="ff1"></div><div class="fi-name">Géométrie</div></div>
+      <div class="fi"><div class="fi-lbl">Coulomb</div><div id="ff2"></div><div class="fi-name">Électrostatique</div></div>
+      <div class="fi"><div class="fi-lbl">Limite</div><div id="ff3"></div><div class="fi-name">Analyse</div></div>
+      <div class="fi"><div class="fi-lbl">Gaz parfaits</div><div id="ff4"></div><div class="fi-name">Thermodynamique</div></div>
+      <div class="fi"><div class="fi-lbl">Logarithme</div><div id="ff5"></div><div class="fi-name">Fonctions</div></div>
+      <div class="fi"><div class="fi-lbl">Équation d'onde</div><div id="ff6"></div><div class="fi-name">Ondes</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section id="lab" class="sp">
+  <div class="lab-layout">
+    <div class="rl">
+      <div class="eyebrow">Notre approche</div>
+      <h2 class="st">Apprendre par la<br><em>compréhension</em>,<br>pas par cœur</h2>
+      <p class="sdesc">Nous construisons une véritable intuition scientifique. Chaque formule a une histoire, chaque équation a une logique.</p>
+      <div class="checklist">
+        <div class="ci2 rv d1"><div class="ci2-icon">✓</div><div><div class="ci2-title">Cours individualisés & petits groupes</div><div class="ci2-desc">Max 5 élèves par groupe. Plans personnalisés selon les lacunes détectées.</div></div></div>
+        <div class="ci2 rv d2"><div class="ci2-icon">∑</div><div><div class="ci2-title">Exercices progressifs & examens blancs</div><div class="ci2-desc">Du niveau 6ème aux sujets de Terminale, avec correction et stratégie de résolution.</div></div></div>
+        <div class="ci2 rv d3"><div class="ci2-icon">⚗</div><div><div class="ci2-title">Expériences & visualisations</div><div class="ci2-desc">Manipulations, schémas et simulations pour ancrer les concepts durablement.</div></div></div>
+        <div class="ci2 rv d4"><div class="ci2-icon">📊</div><div><div class="ci2-title">Suivi et rapports aux parents</div><div class="ci2-desc">Bilan mensuel de progression et plan d'action pour les semaines suivantes.</div></div></div>
+      </div>
+    </div>
+    <div class="rr">
+      <div class="lab-screen">
+        <div class="lab-bar">
+          <div class="ld" style="background:#ff5f57"></div>
+          <div class="ld" style="background:#febc2e"></div>
+          <div class="ld" style="background:#28c840"></div>
+          <span style="font-size:.7rem;color:var(--muted);margin-left:.5rem">Labo de formules interactif</span>
+        </div>
+        <div class="lab-body">
+          <div class="lab-tabs" id="labTabs">
+            <button class="ltab active" onclick="switchTab('maths')">Mathématiques</button>
+            <button class="ltab" onclick="switchTab('physique')">Physique</button>
+            <button class="ltab" onclick="switchTab('chimie')">Chimie</button>
+          </div>
+          <div class="lab-fname" id="labName">Théorème de Pythagore</div>
+          <div class="lab-area" id="labFormula"></div>
+          <div class="lab-fdesc" id="labDesc">Dans un triangle rectangle, le carré de l'hypoténuse est égal à la somme des carrés des deux autres côtés.</div>
+          <div class="lab-nav">
+            <button onclick="prevF()">‹</button>
+            <button onclick="nextF()">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testi" class="sp">
+  <div class="rv" style="text-align:center;max-width:480px;margin:0 auto 4rem">
+    <div class="eyebrow" style="justify-content:center">Témoignages</div>
+    <h2 class="st">Des résultats qui<br><em>parlent d'eux-mêmes</em></h2>
+  </div>
+  <div class="tgrid">
+    <div class="tc rv d1">
+      <div class="res-badge">8/20 → 15/20 en Maths</div>
+      <div class="t-stars">★★★★★</div>
+      <p class="t-text">"Mon fils avait une peur viscérale des équations. En deux mois, il résout des systèmes de trois inconnues sans paniquer. La méthode est vraiment différente."</p>
+      <div class="t-author"><div class="t-av">A</div><div><div class="t-name">Aminata Sorel</div><div class="t-role">Mère d'élève · 3ème</div></div></div>
+    </div>
+    <div class="tc rv d2">
+      <div class="res-badge">Mention Bien au Brevet</div>
+      <div class="t-stars">★★★★★</div>
+      <p class="t-text">"La physique-chimie était un mystère total pour ma fille. Maintenant elle m'explique pourquoi le ciel est bleu et comment fonctionnent les circuits électriques."</p>
+      <div class="t-author"><div class="t-av">K</div><div><div class="t-name">Kofi Mensah</div><div class="t-role">Père d'élève · 3ème</div></div></div>
+    </div>
+    <div class="tc rv d3">
+      <div class="res-badge">17/20 au Bac · Maths</div>
+      <div class="t-stars">★★★★★</div>
+      <p class="t-text">"L'accompagnement en Terminale S a été décisif. Les exercices proposés étaient exactement le niveau du bac. Ma fille est en prépa scientifique aujourd'hui."</p>
+      <div class="t-author"><div class="t-av">F</div><div><div class="t-name">Fatou Diallo</div><div class="t-role">Mère d'élève · Terminale S</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="sp" style="position:relative">
+  <div class="contact-glow"></div>
+  <div class="cg">
+    <div class="rl">
+      <div class="eyebrow">Contact</div>
+      <h2 class="st">Offrez à votre enfant<br>le départ qu'il <em>mérite</em></h2>
+      <p class="sdesc">Premier entretien d'évaluation gratuit. Nous identifions les lacunes précises et construisons un plan sur mesure.</p>
+      <div class="ci-items">
+        <div class="ci"><div class="ci-icon">📍</div><div><div class="ci-label">Adresse</div><div class="ci-val">Abomey-Calavi, Cotonou, Bénin</div></div></div>
+        <div class="ci"><div class="ci-icon">📞</div><div><div class="ci-label">Téléphone / WhatsApp</div><div class="ci-val">0199305434</div></div></div>
+        <div class="ci"><div class="ci-icon">✉️</div><div><div class="ci-label">Email</div><div class="ci-val">excellenceacademique2@gmail.com</div></div></div>
+        <div class="ci"><div class="ci-icon">🕐</div><div><div class="ci-label">Horaires</div><div class="ci-val">Lun – Sam · 8h à 20h</div></div></div>
+      </div>
+    </div>
+    <div class="rr">
+      <form class="cform" id="cForm" onsubmit="submitF(event)">
+        <div class="fg-row">
+          <div class="fg"><label>Prénom</label><input type="text" placeholder="Jean" required></div>
+          <div class="fg"><label>Nom</label><input type="text" placeholder="Dupont" required></div>
+        </div>
+        <div class="fg"><label>Email</label><input type="email" placeholder="votre@email.com" required></div>
+        <div class="fg"><label>Téléphone</label><input type="tel" placeholder="+229 01 XX XX XX"></div>
+        <div class="fg-row">
+          <div class="fg">
+            <label>Classe</label>
+            <select required>
+              <option value="" disabled selected>Choisir…</option>
+              <option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option>
+              <option>2nde</option><option>1ère</option><option>Terminale</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Matière</label>
+            <select required>
+              <option value="" disabled selected>Choisir…</option>
+              <option>Mathématiques</option>
+              <option>Physique-Chimie (PCT)</option>
+              <option>Maths + PCT</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label>Message</label><textarea rows="3" placeholder="Décrivez les difficultés rencontrées…"></textarea></div>
+        <button type="submit" class="btn-sub"><span>Envoyer ma demande →</span></button>
+      </form>
+      <div class="fsuccess" id="fsuccess">✦ Merci ! Nous vous contacterons dans les 24h pour fixer l'évaluation gratuite.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="flogo">Excel<span>lence</span> Académique</a>
+  <p>© 2026 · Abomey-Calavi, Cotonou, Bénin · Tous droits réservés</p>
+  <div class="flinks"><a href="#services">Cours</a><a href="#testi">Avis</a><a href="#contact">Contact</a></div>
+</footer>
+
+<script>
+/* ════════════════════════════════
+   INTRO CINÉMATIQUE
+════════════════════════════════ */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.getElementById('intro').classList.add('hide');
+    setTimeout(()=>document.getElementById('intro').remove(),900);
+  },2800);
+});
+
+/* ════════════════════════════════
+   CURSOR (triple layer)
+════════════════════════════════ */
+const cur=document.getElementById('cur');
+const ring=document.getElementById('cur-ring');
+const trail=document.getElementById('cur-trail');
+let mx=0,my=0,rx=0,ry=0,tx=0,ty=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+(function animCur(){
+  rx+=(mx-rx)*.1; ry+=(my-ry)*.1;
+  tx+=(mx-tx)*.05; ty+=(my-ty)*.05;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  trail.style.left=tx+'px'; trail.style.top=ty+'px';
+  requestAnimationFrame(animCur);
+})();
+
+/* Card mouse-tracking glow */
+document.querySelectorAll('.sc').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');
+    const xRot=((e.clientY-r.top)/r.height-.5)*12;
+    const yRot=((e.clientX-r.left)/r.width-.5)*16;
+    card.style.transform=`translateY(-10px) scale(1.01) rotateX(${-xRot}deg) rotateY(${yRot}deg)`;
+    card.style.transition='box-shadow .5s,border-color .5s';
+  });
+  card.addEventListener('mouseleave',()=>{
+    card.style.transform='';
+    card.style.transition='transform .5s cubic-bezier(0.22,1,0.36,1),box-shadow .5s,border-color .5s';
+  });
+});
+
+/* ════════════════════════════════
+   CANVAS PARTICLES
+════════════════════════════════ */
+const cv=document.getElementById('bgc'),ctx=cv.getContext('2d');
+let pts=[];
+function rsz(){cv.width=innerWidth;cv.height=innerHeight}
+rsz();window.addEventListener('resize',rsz);
+class Pt{
+  constructor(){this.reset()}
+  reset(){this.x=Math.random()*cv.width;this.y=Math.random()*cv.height;this.vx=(Math.random()-.5)*.25;this.vy=(Math.random()-.5)*.25;this.r=Math.random()*1.4+.3;this.a=Math.random()*.2+.04;this.c=Math.random()>.6?'79,143,255':'0,212,255'}
+  update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>cv.width||this.y<0||this.y>cv.height)this.reset()}
+  draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(${this.c},${this.a})`;ctx.fill()}
+}
+for(let i=0;i<130;i++)pts.push(new Pt());
+function drawLines(){
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+    if(d<90){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(79,143,255,${.035*(1-d/90)})`;ctx.lineWidth=.4;ctx.stroke()}
+  }
+}
+(function animPts(){ctx.clearRect(0,0,cv.width,cv.height);pts.forEach(p=>{p.update();p.draw()});drawLines();requestAnimationFrame(animPts)})();
+
+/* ════════════════════════════════
+   FLOATING FORMULAS
+════════════════════════════════ */
+const ffTexts=['E = mc²','∑ aᵢ','∫f(x)dx','F = ma','PV = nRT','a²+b²=c²','sin²θ+cos²θ=1','λ=v/f','pH=-log[H⁺]','∇²φ=0','E=hν','v=v₀+at','y=ax²+bx+c','ln(eˣ)=x'];
+const ffwrap=document.getElementById('ffwrap');
+function spawnFF(){
+  const el=document.createElement('div');el.className='ff';
+  el.textContent=ffTexts[Math.floor(Math.random()*ffTexts.length)];
+  el.style.left=Math.random()*95+'vw';
+  const d=18+Math.random()*18;
+  el.style.animationDuration=d+'s';el.style.animationDelay=Math.random()*-d+'s';
+  el.style.fontSize=(.55+Math.random()*.5)+'rem';
+  ffwrap.appendChild(el);setTimeout(()=>el.remove(),(d+5)*1000);
+}
+for(let i=0;i<20;i++)spawnFF();setInterval(spawnFF,2500);
+
+/* ════════════════════════════════
+   NAV
+════════════════════════════════ */
+window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('scrolled',scrollY>60));
+function toggleMenu(){document.getElementById('navLinks').classList.toggle('open')}
+document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>document.getElementById('navLinks').classList.remove('open')));
+
+/* ════════════════════════════════
+   SCROLL REVEAL
+════════════════════════════════ */
+const rvEls=document.querySelectorAll('.rv,.rl,.rr,.rs');
+const obs=new IntersectionObserver(en=>{en.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');obs.unobserve(e.target)}})},{threshold:.1});
+rvEls.forEach(el=>obs.observe(el));
+
+/* ════════════════════════════════
+   COUNTERS
+════════════════════════════════ */
+function animCount(id,target,delay=0){
+  setTimeout(()=>{
+    const el=document.getElementById(id);let cur=0;const step=target/60;
+    const t=setInterval(()=>{cur=Math.min(cur+step,target);el.textContent=Math.floor(cur);if(cur>=target)clearInterval(t)},16);
+  },delay);
+}
+const heroObs=new IntersectionObserver(en=>{
+  if(en[0].isIntersecting){animCount('c1',97,300);animCount('c2',3,500);animCount('c3',500,700);heroObs.disconnect()}
+},{threshold:.4});
+heroObs.observe(document.getElementById('hero'));
+
+/* ════════════════════════════════
+   STATS ANIMATIONS (bars + donut + mini chart)
+════════════════════════════════ */
+let statsAnimated=false;
+const statsObs=new IntersectionObserver(en=>{
+  if(en[0].isIntersecting&&!statsAnimated){
+    statsAnimated=true;
+    /* Progress bars */
+    document.querySelectorAll('.bar-fill').forEach((b,i)=>{
+      setTimeout(()=>{b.style.width=b.dataset.w+'%'},200+i*120);
+    });
+    /* Donut chart */
+    animCount('dc1',97,300);
+    setTimeout(()=>{
+      const c=502*(1-.97);
+      document.getElementById('donut1').style.strokeDashoffset=c;
+    },400);
+    /* Mini bars */
+    document.querySelectorAll('#miniChart .mini-bar').forEach((b,i)=>{
+      setTimeout(()=>{b.style.height=b.dataset.h+'%'},300+i*100);
+    });
+    statsObs.disconnect();
+  }
+},{threshold:.2});
+statsObs.observe(document.getElementById('stats'));
+
+/* ════════════════════════════════
+   TICKER
+════════════════════════════════ */
+const ticks=[
+  {l:'Newton',f:'F = ma'},{l:'Einstein',f:'E = mc²'},{l:'Pythagore',f:'a²+b²=c²'},
+  {l:'Ohm',f:'U = RI'},{l:'Intégrale',f:'∫f(x)dx'},{l:'Euler',f:'e^(iπ)+1=0'},
+  {l:'Gaz parfait',f:'PV = nRT'},{l:'Énergie cin.',f:'Ec = ½mv²'},
+  {l:'Coulomb',f:'F = kq₁q₂/r²'},{l:'Snell',f:'n₁sinθ₁=n₂sinθ₂'},{l:'Onde',f:'v = λ·f'},
+];
+const tt=document.getElementById('tickerTrack');
+tt.innerHTML=[...ticks,...ticks].map(d=>`<span class="tick-item"><span class="tick-label">${d.l}</span>${d.f}</span><span class="tick-sep">·</span>`).join('');
+
+/* ════════════════════════════════
+   KATEX — rendu fiable et instantané
+════════════════════════════════ */
+const KO={throwOnError:false,displayMode:true,output:'html'};
+
+function renderTex(el,tex){
+  if(!el||!window.katex)return;
+  try{katex.render(tex,el,KO)}
+  catch(e){el.textContent=tex}
+}
+
+/* Formules statiques des cartes */
+const fdefs={
+  f1:`\\frac{d}{dx}f(x)=\\lim_{h\\to0}\\frac{f(x+h)-f(x)}{h}`,
+  f2:`x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}`,
+  f3:`\\sin^2\\theta+\\cos^2\\theta=1`,
+  f4:`\\vec{F}=m\\vec{a}=m\\frac{d^2\\vec{r}}{dt^2}`,
+  f5:`E=mc^2`,
+  f6:`U=RI\\quad;\\quad P=UI=RI^2`,
+  ff1:`a^2+b^2=c^2`,
+  ff2:`F=k\\dfrac{q_1q_2}{r^2}`,
+  ff3:`f'(x)=\\lim_{h\\to0}\\dfrac{f(x+h)-f(x)}{h}`,
+  ff4:`PV=nRT`,
+  ff5:`\\ln(e^x)=x`,
+  ff6:`\\dfrac{\\partial^2u}{\\partial t^2}=c^2\\nabla^2u`,
+};
+
+function renderFormulas(){
+  Object.entries(fdefs).forEach(([id,tex])=>{
+    renderTex(document.getElementById(id),tex);
+  });
+  renderLab();
+}
+
+/* Attendre que KaTeX soit chargé */
+function waitKatex(cb,tries=0){
+  if(window.katex){cb()}
+  else if(tries<50){setTimeout(()=>waitKatex(cb,tries+1),100)}
+}
+waitKatex(renderFormulas);
+
+/* ════════════════════════════════
+   LAB INTERACTIF
+════════════════════════════════ */
+const labData={
+  maths:[
+    {n:'Théorème de Pythagore',t:`a^2+b^2=c^2`,d:"Dans un triangle rectangle, le carré de l'hypoténuse est égal à la somme des carrés des deux autres côtés."},
+    {n:'Formule quadratique',t:`x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}`,d:"Donne les racines d'une équation du second degré ax²+bx+c=0."},
+    {n:'Intégrale définie',t:`\\int_a^b f(x)\\,dx=F(b)-F(a)`,d:"Calcule l'aire sous la courbe entre a et b. F est la primitive de f."},
+    {n:"Identité d'Euler",t:`e^{i\\pi}+1=0`,d:"Relie les cinq constantes fondamentales des mathématiques en une seule équation magistrale."},
+  ],
+  physique:[
+    {n:'2ème loi de Newton',t:`\\vec{F}=m\\vec{a}`,d:"La somme des forces appliquées à un corps est égale à sa masse multipliée par son accélération."},
+    {n:'Énergie cinétique',t:`E_c=\\frac{1}{2}mv^2`,d:"L'énergie d'un objet de masse m en mouvement à la vitesse v."},
+    {n:"Loi d'Ohm",t:`U=R\\cdot I`,d:"La tension aux bornes d'un conducteur est proportionnelle à l'intensité qui le traverse."},
+    {n:'Gravitation universelle',t:`F=G\\frac{m_1m_2}{r^2}`,d:"Force d'attraction gravitationnelle entre deux masses séparées d'une distance r."},
+  ],
+  chimie:[
+    {n:'Loi des gaz parfaits',t:`PV=nRT`,d:"Relation entre pression, volume, quantité de matière et température d'un gaz parfait."},
+    {n:'pH',t:`\\text{pH}=-\\log[H_3O^+]`,d:"Le pH mesure l'acidité d'une solution aqueuse."},
+    {n:'Enthalpie de réaction',t:`\\Delta H=\\sum H_{\\text{prod}}-\\sum H_{\\text{réact}}`,d:"Variation d'énergie lors d'une réaction chimique. Négatif = réaction exothermique."},
+    {n:'Vitesse de réaction',t:`v=k[A]^m[B]^n`,d:"La vitesse dépend des concentrations des réactifs et d'une constante k propre à la réaction."},
+  ],
+};
+let curTab='maths',curIdx=0;
+
+function renderLab(){
+  const f=labData[curTab][curIdx];
+  document.getElementById('labName').textContent=f.n;
+  document.getElementById('labDesc').textContent=f.d;
+  const el=document.getElementById('labFormula');
+  el.innerHTML='';
+  waitKatex(()=>renderTex(el,f.t));
+}
+
+function switchTab(tab){
+  curTab=tab;curIdx=0;
+  document.querySelectorAll('.ltab').forEach(b=>{
+    b.classList.toggle('active',
+      (tab==='maths'&&b.textContent.includes('Math'))||
+      (tab==='physique'&&b.textContent.includes('Phys'))||
+      (tab==='chimie'&&b.textContent.includes('Chim'))
+    );
+  });
+  renderLab();
+}
+function nextF(){curIdx=(curIdx+1)%labData[curTab].length;renderLab()}
+function prevF(){curIdx=(curIdx-1+labData[curTab].length)%labData[curTab].length;renderLab()}
+
+/* ════════════════════════════════
+   FORM
+════════════════════════════════ */
+function submitF(e){
+  e.preventDefault();
+  document.getElementById('cForm').style.display='none';
+  document.getElementById('fsuccess').style.display='block';
+}
+</script>
+</body>
+</html>
